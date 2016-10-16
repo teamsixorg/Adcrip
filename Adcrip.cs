@@ -16,23 +16,23 @@ namespace Adcrip
 		TripleDES
 	}
 
-    public class Adcrip
+	public class Adcrip
 	{
-        private string _key; // Chave de segurança.
-        private CryptProvider _cryptProvider; // Método de criptografia.
-        private SymmetricAlgorithm _algorithm; // Algoritmo do método de criptografia.
-        private void SetIV()
-        {
-            switch (_cryptProvider)
-            {
-                case CryptProvider.Rijndael:
-                    _algorithm.IV = new byte[] { 0xf, 0x6f, 0x13, 0x2e, 0x35, 0xc2, 0xcd, 0xf9, 0x5, 0x46, 0x9c, 0xea, 0xa8, 0x4b, 0x73, 0xcc };
-                    break;
-                default:
-                    _algorithm.IV = new byte[] { 0xf, 0x6f, 0x13, 0x2e, 0x35, 0xc2, 0xcd, 0xf9 };
-                    break;
-            }
-        }
+		private string _key; // Chave de segurança.
+		private CryptProvider _cryptProvider; // Método de criptografia.
+		private SymmetricAlgorithm _algorithm; // Algoritmo do método de criptografia.
+		private void SetIV()
+		{
+		    switch (_cryptProvider)
+		    {
+			case CryptProvider.Rijndael:
+			    _algorithm.IV = new byte[] { 0xf, 0x6f, 0x13, 0x2e, 0x35, 0xc2, 0xcd, 0xf9, 0x5, 0x46, 0x9c, 0xea, 0xa8, 0x4b, 0x73, 0xcc };
+			    break;
+			default:
+			    _algorithm.IV = new byte[] { 0xf, 0x6f, 0x13, 0x2e, 0x35, 0xc2, 0xcd, 0xf9 };
+			    break;
+		    }
+	}
 
         public string Key
         {
