@@ -15,12 +15,12 @@ namespace Adcrip
 		DES,
 		TripleDES
 	}
-	
-	public class Adcrip
+
+    public class Adcrip
 	{
-        private string _key = string.Empty;
-        private CryptProvider _cryptProvider;
-        private SymmetricAlgorithm _algorithm;
+        private string _key; // Chave de segurança.
+        private CryptProvider _cryptProvider; // Método de criptografia.
+        private SymmetricAlgorithm _algorithm; // Algoritmo do método de criptografia.
         private void SetIV()
         {
             switch (_cryptProvider)
@@ -33,43 +33,50 @@ namespace Adcrip
                     break;
             }
         }
+
         public string Key
         {
             get { return _key; }
             set { _key = value; }
         }
+
         public Adcrip()
         {
             _algorithm = new RijndaelManaged();
             _algorithm.Mode = CipherMode.CBC;
             _cryptProvider = CryptProvider.Rijndael;
         }
+
         public Adcrip(CryptProvider cryptProvider)
-             {     
-                    switch(cryptProvider)
-                    {
-                           case CryptProvider.Rijndael:
-                                  _algorithm = new RijndaelManaged();
-                                 _cryptProvider = CryptProvider.Rijndael;
-                                  break;
-                           case CryptProvider.RC2:
-                                  _algorithm = new RC2CryptoServiceProvider();
-                                  _cryptProvider = CryptProvider.RC2;
-                                  break;
-                           case CryptProvider.DES:
-                                  _algorithm = new DESCryptoServiceProvider();
-                                  _cryptProvider = CryptProvider.DES;
-                                  break;
-                           case CryptProvider.TripleDES:
-                                  _algorithm = new TripleDESCryptoServiceProvider();
-                                  _cryptProvider = CryptProvider.TripleDES;
-                                  break;
-                    }
-                    _algorithm.Mode = CipherMode.CBC;
-             }
+        {     
+            switch(cryptProvider)
+            {
+                    case CryptProvider.Rijndael:
+                            _algorithm = new RijndaelManaged();
+                            _cryptProvider = CryptProvider.Rijndael;
+                            break;
+                    case CryptProvider.RC2:
+                            _algorithm = new RC2CryptoServiceProvider();
+                            _cryptProvider = CryptProvider.RC2;
+                            break;
+                    case CryptProvider.DES:
+                            _algorithm = new DESCryptoServiceProvider();
+                            _cryptProvider = CryptProvider.DES;
+                            break;
+                    case CryptProvider.TripleDES:
+                            _algorithm = new TripleDESCryptoServiceProvider();
+                            _cryptProvider = CryptProvider.TripleDES;
+                            break;
+            }
+            _algorithm.Mode = CipherMode.CBC;
+        }
+
+        // Obtemção da chave de criptografia/descriptgrafia.. 
+        #region
+
         public virtual byte[] GetKey()
         {
-            string salt = string.Empty;
+            string salt = null;
             if (_algorithm.LegalKeySizes.Length > 0)
             {
                 int keySize = _key.Length * 8;
@@ -92,6 +99,13 @@ namespace Adcrip
             PasswordDeriveBytes key = new PasswordDeriveBytes(_key, ASCIIEncoding.ASCII.GetBytes(salt));
             return key.GetBytes(_key.Length);
         }
+
+        #endregion
+
+        // Criptografia.
+
+        #region
+
         public virtual string Encrypt(string texto)
         {
             byte[] plainByte = Encoding.UTF8.GetBytes(texto);
@@ -106,6 +120,12 @@ namespace Adcrip
             byte[] cryptoByte = _memoryStream.ToArray();
             return Convert.ToBase64String(cryptoByte, 0, cryptoByte.GetLength(0));
         }
+
+        #endregion
+
+        // Descriptografia.
+        #region
+
         public virtual string Decrypt(string textoCriptografado)
         {
             byte[] cryptoByte = Convert.FromBase64String(textoCriptografado);
@@ -125,237 +145,105 @@ namespace Adcrip
                 return null;
             }
         }
+
+        #endregion
+
     }
-	
-	class Criptografia
+
+    class Criptografia
 	{
-		string Metodo;
-		string Texto;
-		string Arquivo;
-		string Chave;
-		string Resultado;
-		
-		public Criptografia DoTexto(string Texto)
+		CryptProvider _mode; // Encryption method.
+        string _key; // Encryption key.
+        string _result; // Encryption result.
+
+        string _text; // Text to be encrypted.
+
+        public Criptografia DoTexto(string text)
 		{
-			this.Texto = Texto;
+			this._text = text;
 			return this;
 		}
 		
-		public Criptografia DoArquivo(string Arquivo)
+		public Criptografia ComChave(string key)
 		{
-			this.Arquivo = Arquivo;
+			this._key = key;
 			return this;
 		}
 		
-		public Criptografia ComChave(string Chave)
+		public Criptografia NoMetodo(CryptProvider mode)
 		{
-			this.Chave = Chave;
+			this._mode = mode;
 			return this;
 		}
-		
-		public Criptografia NoMetodo(string Metodo)
-		{
-			this.Metodo = Metodo;
-			return this;
-		}
-		
+
 		public string GerarRetorno()
-		{
-			CryptProvider MetodoAssimetrico = new CryptProvider();
-	
-			// Seleção do método de criptografia.
+		{	
+			
+            // Criptografia.
 			#region
 			
-			switch(Metodo)
+			if(_mode != null)
 			{
-				case "DES":
-					MetodoAssimetrico = CryptProvider.DES;
-					break;
-				case "RC2":
-					MetodoAssimetrico = CryptProvider.RC2;
-					break;
-				case "Rijndael":
-					MetodoAssimetrico = CryptProvider.Rijndael;
-					break;
-				case "TripleDES":
-					MetodoAssimetrico = CryptProvider.TripleDES;
-					break;
-			}
+				Adcrip Crip = new Adcrip(_mode);
+				Crip.Key = _key;
 			
-			#endregion
-			
-			// Criptografia assimétrica.
-			#region
-			
-			if(MetodoAssimetrico != null)
-			{
-				Adcrip Crip = new Adcrip(MetodoAssimetrico);
-				Crip.Key = Chave;
-			
-				if(string.IsNullOrEmpty(Texto) == false)
+				if(string.IsNullOrEmpty(_text) == false)
 				{
-					Resultado = Crip.Encrypt(Texto);
-				}
-				else if(string.IsNullOrEmpty(Arquivo) == false)
-				{
-					List<string> NovoTexto = new List<string>();
-					StreamReader TextoArquivo = new StreamReader(Arquivo);
-					while(!TextoArquivo.EndOfStream)
-					{
-						string LinhaAtual = TextoArquivo.ReadLine();
-						if(string.IsNullOrEmpty(LinhaAtual) == false)
-						{
-							NovoTexto.Add(Crip.Encrypt(LinhaAtual));
-						}
-						else
-						{
-							NovoTexto.Add("");
-						}
-					}		
-					TextoArquivo.Close();
-					TextoArquivo.Dispose();
-			
-					string path = Path.GetDirectoryName(Arquivo) + @"\" + Path.GetFileNameWithoutExtension(Arquivo) + "_Crip" + Path.GetExtension(Arquivo);
-					StreamWriter EscritaNovoArq = new StreamWriter(path);
-					for(int c = 0; c >= NovoTexto.Count; c++)
-					{
-						string ct = NovoTexto[c].ToString();
-						EscritaNovoArq.WriteLine(ct);
-					}
-					EscritaNovoArq.Close();
-					EscritaNovoArq.Dispose();
-					
-					Resultado = path;
+					_result = Crip.Encrypt(_result);
 				}
 			}
-			
-			#endregion
-			
-			// Retorno e limpeza da função.
-			#region
-			
-			return Resultado;
-			Metodo = null;
-			Texto = null;
-			Arquivo = null;
-			Chave = null;
-			Resultado = null;
-			
-			#endregion
+
+            #endregion
+
+            return _result;
 		}
 	}
 	
 	class Descriptografia
 	{
-		string Metodo;
-		string Texto;
-		string Arquivo;
-		string Chave;
-		string Resultado;
-		
-		public Descriptografia DoTexto(string Texto)
+        CryptProvider _mode; // Encryption method.
+        string _key; // Encryption key.
+        string _result; // Encryption result.
+
+        string _text; // Text to be encrypted.
+
+        public Descriptografia DoTexto(string Texto)
 		{
-			this.Texto = Texto;
-			return this;
-		}
-		
-		public Descriptografia DoArquivo(string Arquivo)
-		{
-			this.Arquivo = Arquivo;
+			this._text = Texto;
 			return this;
 		}
 		
 		public Descriptografia ComChave(string Chave)
 		{
-			this.Chave = Chave;
+			this._key = Chave;
 			return this;
 		}
 		
-		public Descriptografia NoMetodo(string Metodo)
+		public Descriptografia NoMetodo(CryptProvider mode)
 		{
-			this.Metodo = Metodo;
+			this._mode = mode;
 			return this;
 		}
 		
 		public string GerarRetorno()
 		{
-			CryptProvider MetodoAssimetrico = new CryptProvider();
-			
-			// Seleção do metodo de criptografia.
-			#region
-			
-			switch(Metodo)
-			{
-				case "DES":
-					MetodoAssimetrico = CryptProvider.DES;
-					break;
-				case "RC2":
-					MetodoAssimetrico = CryptProvider.RC2;
-					break;
-				case "Rijndael":
-					MetodoAssimetrico = CryptProvider.Rijndael;
-					break;
-				case "TripleDES":
-					MetodoAssimetrico = CryptProvider.TripleDES;
-					break;
-			}
-			
-			#endregion
-			
-			// Criptografia assimétrica.
-			#region
-			
-			Adcrip Decrip = new Adcrip(MetodoAssimetrico);
-			Decrip.Key = Chave;
-			if(string.IsNullOrEmpty(Texto) == false)
-			{
-				Resultado = Decrip.Decrypt(Texto);
-			}
-			else if(string.IsNullOrEmpty(Arquivo) == false)
-			{
-				List<string> NovoTexto = new List<string>();
-				StreamReader TextoArquivo = new StreamReader(Arquivo);
-				while(!TextoArquivo.EndOfStream)
-				{
-					string LinhaAtual = TextoArquivo.ReadLine();
-					if(string.IsNullOrEmpty(LinhaAtual) == false)
-					{
-						NovoTexto.Add(Decrip.Decrypt(LinhaAtual));
-					}
-					else
-					{
-						NovoTexto.Add("");
-					}
-				}
-				TextoArquivo.Close();
-				TextoArquivo.Dispose();
-				
-				string path = Path.GetDirectoryName(Arquivo) + @"\" + Path.GetFileNameWithoutExtension(Arquivo) + "_Decrip" + Path.GetExtension(Arquivo);
-				StreamWriter EscritaNovoArq = new StreamWriter(path);
-				for(int c = 0; c >= NovoTexto.Count; c++)
-				{
-					string ct = NovoTexto[c].ToString();
-					EscritaNovoArq.WriteLine(ct);
-				}
-				EscritaNovoArq.Close();
-				EscritaNovoArq.Dispose();
-				
-				Resultado = path;
-			}
-			
-			#endregion
-			
-			// Retorno e limpeza da função.
-			#region
-			
-			return Resultado;
-			Metodo = null;
-			Texto = null;
-			Arquivo = null;
-			Chave = null;
-			Resultado = null;
-			
-			#endregion
-		}
+            // Descriptografia.
+            #region
+
+            if (_mode != null)
+            {
+                Adcrip Decrip = new Adcrip(_mode);
+                Decrip.Key = _key;
+
+                if (string.IsNullOrEmpty(_text) == false)
+                {
+                    _result = Decrip.Decrypt(_result);
+                }
+            }
+
+            #endregion
+
+            return _result;
+        }
 	}
 }
